@@ -6,7 +6,7 @@
   "scripts": {
     "start": "python -m http.server 8000",
     "dev": "python -m http.server 8000",
-    "build": "echo 'Build completo - arquivos prontos para deploy'",
+    "build": "",
     "deploy": "echo 'Deploy para GitHub Pages ativado'"
   },
   "keywords": [
