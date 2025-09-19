@@ -29,9 +29,9 @@ let directMessages = {};
 let conversationHistory = [];
 
 let channels = [
-    { id: 'geral', name: 'Geral', description: 'Canal geral da empresa', unread: 2 },
+    { id: 'geral', name: 'Geral', description: 'Canal geral da empresa', unread: 0 },
     { id: 'vendas', name: 'Vendas', description: 'Discussões de vendas', unread: 0 },
-    { id: 'suporte', name: 'Suporte', description: 'Atendimento ao cliente', unread: 1 },
+    { id: 'suporte', name: 'Suporte', description: 'Atendimento ao cliente', unread: 0 },
     { id: 'desenvolvimento', name: 'Desenvolvimento', description: 'Discussões técnicas', unread: 0 }
 ];
 
@@ -60,6 +60,15 @@ const conversationsList = document.getElementById('conversationsList');
 const usersList = document.getElementById('usersList');
 const conversationMessages = document.getElementById('conversationMessages');
 const conversationTitle = document.getElementById('conversationTitle');
+
+// Função auxiliar para obter hora atual
+function getCurrentTime() {
+    const now = new Date();
+    return now.toLocaleTimeString('pt-BR', { 
+        hour: '2-digit', 
+        minute: '2-digit' 
+    });
+}
 
 // Inicialização
 document.addEventListener('DOMContentLoaded', function() {
@@ -96,6 +105,9 @@ function initializeApp() {
         localStorage.setItem('velochat_userrole', currentUser.role);
     }
 
+    // Carregar dados salvos primeiro
+    loadFromStorage();
+    
     // Registrar usuário atual no sistema
     registerCurrentUser();
 
@@ -106,9 +118,6 @@ function initializeApp() {
 
     // Inicializar tema
     initializeTheme();
-    
-    // Carregar dados salvos
-    loadFromStorage();
     
     // Atualizar DMs
     updateDMList();
@@ -505,7 +514,7 @@ function loadFromStorage() {
             // Carregar dados salvos, mantendo defaults se não existirem
             messages = { ...messages, ...(data.messages || {}) };
             directMessages = data.directMessages || {};
-            users = data.users || {}; // Carregar apenas usuários reais
+            users = { ...users, ...(data.users || {}) }; // Mesclar usuários existentes com salvos
             channels = data.channels || channels;
             conversationHistory = data.conversationHistory || [];
             
@@ -521,6 +530,46 @@ function loadFromStorage() {
 // Salvar dados periodicamente
 setInterval(saveMessages, 30000); // A cada 30 segundos
 
+// Sincronizar dados entre abas/navegadores
+setInterval(syncData, 5000); // A cada 5 segundos
+
+function syncData() {
+    // Verificar se há mudanças no localStorage
+    const savedData = localStorage.getItem('velochat_data');
+    if (savedData) {
+        try {
+            const data = JSON.parse(savedData);
+            
+            // Atualizar usuários se houver mudanças
+            if (data.users && Object.keys(data.users).length > Object.keys(users).length) {
+                const oldUserCount = Object.keys(users).length;
+                users = data.users;
+                updateDMList();
+                
+                // Se houver novos usuários, atualizar mensagens
+                if (Object.keys(users).length > oldUserCount) {
+                    loadMessages();
+                }
+            }
+            
+            // Atualizar mensagens se houver mudanças
+            if (data.messages) {
+                Object.keys(data.messages).forEach(channelId => {
+                    if (data.messages[channelId].length > (messages[channelId] || []).length) {
+                        messages[channelId] = data.messages[channelId];
+                        if (channelId === currentChannel) {
+                            loadMessages();
+                        }
+                    }
+                });
+            }
+            
+        } catch (error) {
+            console.error('Erro ao sincronizar dados:', error);
+        }
+    }
+}
+
 // Carregar dados salvos
 loadFromStorage();
 
@@ -535,6 +584,9 @@ function registerCurrentUser() {
     // Definir avatar baseado no nome
     currentUser.avatar = getAvatarForName(currentUser.name);
     
+    // Verificar se é um novo usuário
+    const isNewUser = !users[currentUser.id];
+    
     // Registrar no sistema de usuários
     users[currentUser.id] = {
         id: currentUser.id,
@@ -545,8 +597,34 @@ function registerCurrentUser() {
         lastSeen: Date.now()
     };
     
+    // Se for um novo usuário, adicionar mensagem de boas-vindas
+    if (isNewUser && currentUser.role === 'user') {
+        const welcomeMessage = {
+            id: 'msg_' + Date.now(),
+            author: 'Sistema',
+            authorId: 'system',
+            text: `${currentUser.name} entrou no chat!`,
+            time: getCurrentTime(),
+            timestamp: Date.now(),
+            type: 'system',
+            channel: 'geral'
+        };
+        
+        if (!messages.geral) messages.geral = [];
+        messages.geral.push(welcomeMessage);
+        addToConversationHistory(welcomeMessage);
+        
+        // Se estiver no canal geral, mostrar a mensagem
+        if (currentChannel === 'geral') {
+            addMessageToUI(welcomeMessage, false);
+        }
+    }
+    
     // Salvar dados
     saveMessages();
+    
+    // Atualizar interface
+    updateDMList();
 }
 
 function getAvatarForName(name) {
