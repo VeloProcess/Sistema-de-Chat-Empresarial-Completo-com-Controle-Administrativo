@@ -1,0 +1,35 @@
+{
+  "name": "velochat",
+  "version": "1.0.0",
+  "description": "Sistema de Chat Empresarial Completo com Controle Administrativo",
+  "main": "index.html",
+  "scripts": {
+    "start": "python -m http.server 8000",
+    "dev": "python -m http.server 8000",
+    "build": "echo 'Build completo - arquivos prontos para deploy'",
+    "deploy": "echo 'Deploy para GitHub Pages ativado'"
+  },
+  "keywords": [
+    "chat",
+    "empresarial",
+    "comunicação",
+    "equipe",
+    "admin",
+    "real-time"
+  ],
+  "author": "VeloChat Team",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/seuusuario/velochat.git"
+  },
+  "homepage": "https://seuusuario.github.io/velochat",
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "browserslist": [
+    "> 1%",
+    "last 2 versions",
+    "not dead"
+  ]
+}

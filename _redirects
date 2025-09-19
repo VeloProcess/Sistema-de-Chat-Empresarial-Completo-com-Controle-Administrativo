@@ -1,0 +1,3 @@
+# Configuração para Netlify (se usar)
+# Redirecionar todas as rotas para index.html para SPA
+/*    /index.html   200

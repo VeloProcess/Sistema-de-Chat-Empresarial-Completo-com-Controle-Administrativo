@@ -1,0 +1,12 @@
+# Arquivos para ignorar no Surge
+.gitignore
+README.md
+CHANGELOG.md
+CONTRIBUTING.md
+deploy-guide.md
+package.json
+vercel.json
+firebase.json
+.github/
+node_modules/
+*.log
