@@ -127,6 +127,29 @@
             color: #1634FF;
             margin-bottom: 8px;
         }
+
+        .role-info {
+            margin-bottom: 20px;
+        }
+
+        .role-message {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid #1634FF;
+            color: #666;
+            font-size: 0.9rem;
+            line-height: 1.4;
+        }
+
+        .role-message i {
+            color: #1634FF;
+            font-size: 1.1rem;
+            flex-shrink: 0;
+        }
     </style>
 </head>
 <body>
@@ -147,14 +170,10 @@
             
             <div class="form-group">
                 <label>Nível de Acesso:</label>
-                <div class="role-selection">
-                    <div class="role-option" data-role="user">
-                        <strong>Usuário</strong><br>
-                        <small>Chat normal</small>
-                    </div>
-                    <div class="role-option selected" data-role="admin">
-                        <strong>Admin</strong><br>
-                        <small>Controle total</small>
+                <div class="role-info">
+                    <div class="role-message">
+                        <i class="fas fa-info-circle"></i>
+                        <span>O primeiro usuário será automaticamente o administrador. Usuários subsequentes terão acesso normal.</span>
                     </div>
                 </div>
             </div>
@@ -171,21 +190,12 @@
     </div>
 
     <script>
-        // Seleção de role
-        document.querySelectorAll('.role-option').forEach(option => {
-            option.addEventListener('click', () => {
-                document.querySelectorAll('.role-option').forEach(o => o.classList.remove('selected'));
-                option.classList.add('selected');
-            });
-        });
-
         // Login
         document.getElementById('loginForm').addEventListener('submit', (e) => {
             e.preventDefault();
             
             const username = document.getElementById('username').value;
             const password = document.getElementById('password').value;
-            const role = document.querySelector('.role-option.selected').dataset.role;
             
             if (!username.trim()) {
                 alert('Por favor, digite seu nome de usuário.');
@@ -194,7 +204,6 @@
             
             // Salvar dados de login
             localStorage.setItem('velochat_username', username);
-            localStorage.setItem('velochat_userrole', role);
             if (password) {
                 localStorage.setItem('velochat_password', btoa(password));
             }

@@ -90,8 +90,9 @@ function initializeApp() {
     if (savedRole) {
         currentUser.role = savedRole;
     } else {
-        const isOwner = confirm('Você é o proprietário/administrador do sistema?');
-        currentUser.role = isOwner ? 'owner' : 'user';
+        // Verificar se é o primeiro usuário (proprietário)
+        const isFirstUser = Object.keys(users).length === 0;
+        currentUser.role = isFirstUser ? 'owner' : 'user';
         localStorage.setItem('velochat_userrole', currentUser.role);
     }
 
