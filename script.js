@@ -497,7 +497,13 @@ function saveMessages() {
         users,
         channels,
         conversationHistory,
-        lastSaved: Date.now()
+        lastSaved: Date.now(),
+        currentUser: {
+            id: currentUser.id,
+            name: currentUser.name,
+            status: 'online',
+            lastSeen: Date.now()
+        }
     };
     
     localStorage.setItem('velochat_data', JSON.stringify(data));
@@ -531,7 +537,18 @@ function loadFromStorage() {
 setInterval(saveMessages, 30000); // A cada 30 segundos
 
 // Sincronizar dados entre abas/navegadores
-setInterval(syncData, 5000); // A cada 5 segundos
+setInterval(syncData, 2000); // A cada 2 segundos para sincronização mais rápida
+
+// Atualizar status do usuário atual
+setInterval(updateCurrentUserStatus, 10000); // A cada 10 segundos
+
+function updateCurrentUserStatus() {
+    if (currentUser.id && users[currentUser.id]) {
+        users[currentUser.id].lastSeen = Date.now();
+        users[currentUser.id].status = 'online';
+        saveMessages();
+    }
+}
 
 function syncData() {
     // Verificar se há mudanças no localStorage
@@ -541,27 +558,49 @@ function syncData() {
             const data = JSON.parse(savedData);
             
             // Atualizar usuários se houver mudanças
-            if (data.users && Object.keys(data.users).length > Object.keys(users).length) {
+            if (data.users) {
                 const oldUserCount = Object.keys(users).length;
-                users = data.users;
-                updateDMList();
                 
-                // Se houver novos usuários, atualizar mensagens
+                // Mesclar usuários existentes com novos
+                users = { ...users, ...data.users };
+                
+                // Atualizar status dos usuários baseado no lastSeen
+                Object.keys(users).forEach(userId => {
+                    const user = users[userId];
+                    const now = Date.now();
+                    const timeDiff = now - user.lastSeen;
+                    
+                    // Se o usuário não foi visto há mais de 30 segundos, marcar como offline
+                    if (timeDiff > 30000) {
+                        user.status = 'offline';
+                    } else {
+                        user.status = 'online';
+                    }
+                });
+                
+                // Se houver novos usuários, atualizar interface
                 if (Object.keys(users).length > oldUserCount) {
-                    loadMessages();
+                    updateDMList();
+                    console.log('Novos usuários detectados:', Object.keys(users));
                 }
             }
             
             // Atualizar mensagens se houver mudanças
             if (data.messages) {
+                let messagesUpdated = false;
                 Object.keys(data.messages).forEach(channelId => {
-                    if (data.messages[channelId].length > (messages[channelId] || []).length) {
+                    const oldLength = (messages[channelId] || []).length;
+                    const newLength = data.messages[channelId].length;
+                    
+                    if (newLength > oldLength) {
                         messages[channelId] = data.messages[channelId];
-                        if (channelId === currentChannel) {
-                            loadMessages();
-                        }
+                        messagesUpdated = true;
                     }
                 });
+                
+                if (messagesUpdated) {
+                    loadMessages();
+                }
             }
             
         } catch (error) {
@@ -576,10 +615,9 @@ loadFromStorage();
 // ==================== FUNÇÕES DE USUÁRIO ====================
 
 function registerCurrentUser() {
-    // Gerar ID único para o usuário atual
-    if (!currentUser.id || currentUser.id.startsWith('user_')) {
-        currentUser.id = 'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-    }
+    // Gerar ID único para o usuário atual baseado no nome
+    const nameHash = currentUser.name.toLowerCase().replace(/\s+/g, '_');
+    currentUser.id = 'user_' + nameHash + '_' + Date.now();
     
     // Definir avatar baseado no nome
     currentUser.avatar = getAvatarForName(currentUser.name);
@@ -598,7 +636,7 @@ function registerCurrentUser() {
     };
     
     // Se for um novo usuário, adicionar mensagem de boas-vindas
-    if (isNewUser && currentUser.role === 'user') {
+    if (isNewUser) {
         const welcomeMessage = {
             id: 'msg_' + Date.now(),
             author: 'Sistema',
@@ -625,6 +663,9 @@ function registerCurrentUser() {
     
     // Atualizar interface
     updateDMList();
+    
+    // Forçar sincronização imediata
+    setTimeout(syncData, 1000);
 }
 
 function getAvatarForName(name) {
